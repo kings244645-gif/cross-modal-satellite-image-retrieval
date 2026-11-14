@@ -1,4 +1,4 @@
-# Cross-Modal Satellite Image Retrieval
+# Cross-Modal Satellite Image Retrieval (to be updated)
 
 ## Project overview
 

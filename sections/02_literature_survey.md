@@ -2,41 +2,59 @@
 
 ## Taxonomy of Remote Sensing Image Retrieval
 
-The rapid proliferation of Earth observation data has driven the evolution of Remote Sensing Image Retrieval (RSIR) from early metadata-based querying to advanced Content-Based Remote Sensing Image Retrieval (CBRSIR). Recent comprehensive reviews of the field hierarchically categorize modern RSIR methodologies into two primary branches based on the relationship between the query and the database: uni-source retrieval and cross-source retrieval[@zhou2023].
+The rapid growth of Earth observation data has moved Remote Sensing Image Retrieval (RSIR) from simple metadata queries to Content-Based Remote Sensing Image Retrieval (CBRSIR). Recent reviews group modern RSIR methods into two main branches based on the link between the query and the database: uni-source retrieval and cross-source retrieval[@zhou2023].
 
 ![RSIR Hierarchical Taxonomy](./images/rsir_network.svg)
 
 ### Uni-Source Retrieval
-In uni-source retrieval, the query and gallery images are acquired by the same sensor type[@zhou2023]. This branch is divided by the semantic complexity of the annotations:
-   **Single-Label RSIR (SLRSIR):** The traditional retrieval paradigm where each image is associated with a single dominant land-cover class[@zhou2023]. Benchmark datasets such as UC Merced, WHU-RS19, and PatternNet have historically driven this domain[@zhou2023]. However, SLRSIR fails to capture the heterogeneous nature of real-world remote sensing scenes.
-   **Multi-Label RSIR (MLRSIR):** A more advanced paradigm where images are annotated with multiple primitive classes (e.g., buildings, roads, and water simultaneously)[@zhou2023]. Algorithms in this space must model complex label co-occurrences. Datasets like DLRSD, WHDLD, and MLRSNet support this task[@zhou2023], yet defining robust similarity measures for multi-label ranking remains an active research challenge.
+
+In uni-source retrieval, the same sensor type collects both the query and gallery images[@zhou2023]. Label complexity divides this branch into two groups:
+
+* **Single-Label RSIR (SLRSIR):** Each image has one dominant land-cover class[@zhou2023]. Benchmark datasets such as UC Merced, WHU-RS19, and PatternNet drive this domain[@zhou2023]. However, SLRSIR does not represent the mixed land cover found in real remote sensing scenes.
+
+
+* **Multi-Label RSIR (MLRSIR):** Each image has multiple primitive labels, such as buildings, roads, and water[@zhou2023]. Algorithms in this group must model how these labels appear together. Datasets like DLRSD, WHDLD, and MLRSNet support this task[@zhou2023]. Even so, defining reliable similarity metrics for multi-label ranking remains an open research problem.
+
+
 
 ### Cross-Source Retrieval
-Cross-source retrieval addresses scenarios where the query and database images originate from different physical domains, sensors, or perspectives[@zhou2023].
-   **Retrieval Across Different Sensors (RASRSIR):** Involves images from the same modality but different sensors or resolutions, such as retrieving high-resolution panchromatic images using a multispectral query[@zhou2023].
-   **Cross-View RSIR (CVRSIR):** Also known as geolocalization, this task matches images captured from drastically different viewpoints, such as querying a ground-level panorama against an overhead drone or satellite database[@zhou2023].
-   **Cross-Modal RSIR (CMRSIR):** The focus of this project, CMRSIR bridges entirely different data representations[@zhou2023]. This includes sketch-to-image, text-to-image, audio-to-image, and Optical-to-SAR retrieval[@zhou2023]. Aligning active microwave (SAR) and passive optical imagery requires overcoming a severe physical modality gap, as the sensors measure fundamentally different properties of the Earth's surface.
+
+Cross-source retrieval handles cases where the query and database images come from different physical domains, sensors, or viewpoints[@zhou2023].
+
+* **Retrieval Across Different Sensors (RASRSIR):** This task uses images from the same modality but different sensors or resolutions. For example, a system retrieves high-resolution panchromatic images with a multispectral query[@zhou2023].
+
+
+* **Cross-View RSIR (CVRSIR):** Also called geolocalization, this task matches images from very different viewpoints. For example, a system matches a ground-level panorama against an overhead drone or satellite database[@zhou2023].
+
+
+* **Cross-Modal RSIR (CMRSIR):** This project focuses on CMRSIR, which bridges completely different data representations[@zhou2023]. CMRSIR includes sketch-to-image, text-to-image, audio-to-image, and Optical-to-SAR retrieval[@zhou2023]. To align active microwave (SAR) and passive optical imagery, the model must overcome a large physical modality gap because these sensors measure different Earth surface properties.
+
+
 
 ## Evolution of Deep Metric Learning
 
-To bridge the modality gap, modern RSIR relies heavily on Deep Metric Learning (DML). DML aims to learn a parameterized embedding space where semantically similar samples are mapped closely together, and dissimilar samples are pushed apart.
+To bridge the modality gap, modern RSIR uses Deep Metric Learning (DML). DML learns a parameterized embedding space that places similar samples close together and pushes dissimilar samples apart.
 
 ### From Pairwise to Triplet Formulations
-Early metric learning relied on the Siamese architecture and the **Contrastive Loss** (Hadsell et al., 2006)[@hadsell2006], which minimized the Euclidean distance between positive pairs and penalized negative pairs that fell within a predefined margin. This evolved into the **Triplet Margin Loss** (Schroff et al., 2015)[@schroff2015], which optimizes relative distances: anchoring a query image, pulling a positive sample closer, and pushing a negative sample further away by a set margin. While effective, triplet loss suffers from cubic sampling complexity ($O(N^3)$) and heavily depends on computationally expensive hard-negative mining strategies.
+
+Early metric learning used the Siamese architecture and the **Contrastive Loss** (Hadsell et al., 2006)[@hadsell2006]. This loss reduces the Euclidean distance between positive pairs and penalizes negative pairs inside a set margin. Later work introduced the **Triplet Margin Loss** (Schroff et al., 2015)[@schroff2015] to optimize relative distances. It anchors a query image, pulls a positive sample closer, and pushes a negative sample away by a set margin. However, triplet loss has cubic sampling complexity ($O(N^3)$) and requires costly hard-negative mining.
 
 ### Information Noise Contrastive Estimation (InfoNCE)
-The field experienced a paradigm shift with the introduction of **InfoNCE** (Oord et al., 2018)[@oord2018], rooted in maximizing the mutual information between representations. Instead of comparing one positive and one negative sample, InfoNCE treats the task as a multi-class classification problem over a batch, comparing the query against one positive and $K$ negative samples simultaneously. By operating in a hyperspherical latent space (via $\ell_2$-normalization) and scaling similarities with a temperature parameter $\tau$, InfoNCE creates highly uniform and linearly separable feature spaces.
+
+The introduction of **InfoNCE** (Oord et al., 2018)[@oord2018] shifted the field toward maximizing mutual information between representations. Instead of comparing one positive and one negative sample, InfoNCE solves a multi-class classification task over a batch. It compares the query against one positive and $K$ negative samples at the same time. InfoNCE uses $\ell_2$-normalization to map vectors onto a hypersphere and scales similarities with a temperature parameter $\tau$. This design produces uniform and linearly separable feature spaces.
 
 ### Asymmetric Momentum Self-Distillation
-In cross-modal applications, maintaining consistent representation targets is difficult when the network updates rapidly. Architectures like **MoCo (Momentum Contrast)** (He et al., 2020)[@he2020] and **BYOL (Bootstrap Your Own Latent)** (Grill et al., 2020)[@grill2020] introduced the asymmetric dual-tower paradigm. Instead of updating both the online and target networks via backpropagation, the target network's weights are updated using an Exponential Moving Average (EMA) of the online network. This provides a stable, slowly-evolving target for the contrastive loss, which is critical when aligning highly heterogeneous domains like SAR and Optical imagery.
+
+In cross-modal tasks, rapid network updates make it hard to keep stable representation targets. Architectures such as **MoCo (Momentum Contrast)** (He et al., 2020)[@he2020] and **BYOL (Bootstrap Your Own Latent)** (Grill et al., 2020)[@grill2020] introduced the asymmetric dual-tower design. Backpropagation updates only the online network, while an Exponential Moving Average (EMA) of the online weights updates the target network. This mechanism provides a stable, slowly changing target for the contrastive loss when the model aligns different domains like SAR and Optical imagery.
 
 ## The Modality Gap and Cone Collapse in Cross-Modal Retrieval
 
-When applying contrastive learning to dual-modality inputs (e.g., passing SAR through one encoder and Optical through another), the system is prone to a geometric failure known as the **modality gap** or **cone collapse** (Liang et al., 2022)[@liang2022]. 
+When a model applies contrastive learning to dual-modality inputs—such as SAR in one encoder and Optical in another—it risks a geometric failure called the **modality gap** or **cone collapse** (Liang et al., 2022)[@liang2022].
 
-Even when the InfoNCE loss successfully aligns paired SAR and Optical patches, the underlying differences in the sensor data distributions cause the network to map all SAR embeddings into one narrow cone of the hyperspherical space, and all Optical embeddings into a completely separate cone. While paired vectors remain relatively close across the gap, querying a SAR image against a unified gallery containing both SAR and Optical images will inadvertently retrieve only SAR images, as the intra-modality similarity heavily outweighs the cross-modality similarity.
+Even when InfoNCE aligns paired SAR and Optical patches, different sensor data distributions split the hypersphere. The network maps all SAR embeddings into one narrow cone and all Optical embeddings into a separate cone. Although paired vectors stay relatively close across the gap, querying a SAR image against a mixed gallery retrieves only SAR images. This failure occurs because intra-modality similarity outweighs cross-modality similarity.
 
 ### Transductive vs. Inductive Calibration
-Recent literature attempts to correct this gap by centering the embeddings—subtracting the mean of the SAR vectors and the mean of the Optical vectors. However, computing these centroids over the *test set* constitutes transductive learning, introducing severe data leakage that invalidates the evaluation. 
 
-A rigorous, operationally sound system must employ **Frozen Inductive Centering**. Calibration centroids ($\boldsymbol{\mu}_{\text{SAR}}$ and $\boldsymbol{\mu}_{\text{Opt}}$) must be computed exclusively on a strictly held-out validation set. During inference, incoming test queries are shifted using these frozen, pre-computed scalars. This satisfies strict zero-leakage protocols while successfully neutralizing modality cone collapse, enabling true modality-agnostic unified retrieval.
+Recent methods fix this gap by centering the embeddings. They subtract the mean of the SAR vectors and the mean of the Optical vectors. However, computing these centroids on the *test set* is transductive learning. That approach introduces severe data leakage and invalidates the evaluation.
+
+An operationally sound system must use **Frozen Inductive Centering**. The pipeline computes calibration centroids ($\boldsymbol{\mu}_{\text{SAR}}$ and $\boldsymbol{\mu}_{\text{Opt}}$) exclusively on a held-out validation set. During inference, the system shifts incoming test queries with these frozen, pre-computed centroids. This method prevents data leakage, removes modality cone collapse, and enables true modality-agnostic unified retrieval.
